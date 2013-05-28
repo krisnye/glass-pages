@@ -1,0 +1,13 @@
+
+var out = response.getWriter();
+response.setContentType("text/html");
+
+for (var i = 0; i < 5; i++) {
+    out.write("Hello " + i + "<br>");
+}
+
+var gps = require("glass-pages-server");
+out.write(gps.secret + "<br>");
+out.write(gps.hello() + "<br>");
+var gp = require("glass-pages");
+out.write(gp.hello() + "<br>")

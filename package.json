@@ -1,0 +1,13 @@
+{
+  "name": "glass-pages",
+  "version": "0.0.0",
+  "main": "index.js",
+  "repository": "",
+  "author": "Kris Nye",
+  "license": "BSD",
+  "readmeFilename": "readme.md",
+  "dependencies": {
+    "glass-build": "0.3.x",
+    "sugar": "1.3.8"
+  }
+}

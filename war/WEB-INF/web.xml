@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE web-app PUBLIC
+ "-//Oracle Corporation//DTD Web Application 2.3//EN"
+ "http://java.sun.com/dtd/web-app_2_3.dtd">
+
+<web-app xmlns="http://java.sun.com/xml/ns/javaee" version="2.5">
+    <servlet>
+        <servlet-name>hello</servlet-name>
+        <servlet-class>glasspages.HelloServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>hello</servlet-name>
+        <url-pattern>/hello</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>rsp</servlet-name>
+        <servlet-class>glasspages.RspServlet</servlet-class>
+        <init-param>
+            <param-name>manifest</param-name>
+            <param-value>js/modules/manifest.json;WEB-INF/js/modules/manifest.json</param-value>
+        </init-param>
+        <init-param>
+            <param-name>debug</param-name>
+            <param-value>true</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>rsp</servlet-name>
+        <url-pattern>*.rsp</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>router</servlet-name>
+        <servlet-class>glasspages.RouterServlet</servlet-class>
+        <init-param>
+            <param-name>defaultPage</param-name>
+            <param-value>/login</param-value>
+        </init-param>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>router</servlet-name>
+        <url-pattern>/</url-pattern>
+    </servlet-mapping>
+
+    <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+    <welcome-file>index.jsp</welcome-file>
+    <welcome-file>index.rsp</welcome-file>
+    </welcome-file-list>
+
+    <system-properties>
+        <property name="java.util.logging.config.file" value="WEB-INF/logging.properties"/>
+    </system-properties>
+
+</web-app>

@@ -1,4 +1,5 @@
 node_modules
-*.class
 war/js
 war/WEB-INF/js
+war/WEB-INF/classes
+war/WEB-INF/lib

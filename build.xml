@@ -23,6 +23,13 @@
         <include name="**/*.jar" />
       </fileset>
     </copy>
+    <copy
+        todir="war/WEB-INF/lib"
+        flatten="true">
+      <fileset dir="jars">
+        <include name="**/*.jar" />
+      </fileset>
+    </copy>
   </target>
 
   <target name="compile" depends="copyjars"

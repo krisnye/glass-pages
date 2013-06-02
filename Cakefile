@@ -3,7 +3,7 @@
 serverConfig =
     name: "glass-pages-server"
     source:
-        directory: 'coffee/server'
+        directory: 'src/server'
     node:
         directory: 'lib/server'
     browser:
@@ -15,7 +15,7 @@ serverConfig =
 clientConfig =
     name: "glass-pages"
     source:
-        directory: 'coffee/client'
+        directory: 'src/client'
     node:
         directory: 'lib/client'
     browser:
@@ -23,45 +23,21 @@ clientConfig =
         output:
             directory: 'war/js'
             webroot: 'war'
-
-javaSource = "src"
-isWindows = process.platform is 'win32'
-ext = if isWindows then ".bat" else ""
-server = null
-
-start = ->
-    server = utility.spawn "ant#{ext} runserver"
-
-restart = ((callback) ->
-    kill ->
-        start()
-        callback?()
-    ).debounce(1000)
-
-kill = (callback) ->
-    server?.kill()
-    server = null
-    # in case that doesn't succeed, on windows
-    # we will also do a task kill of all java.exe processes
-    if isWindows
-        utility.exec "taskkill /F /IM java.exe", callback
-    else
-        callback?()
-
-task 'run', 'runs the development server', run = ->
-    restart ->
-        # watch for source changes and restart as needed.
-        watcher.watchDirectory javaSource, {include:".java",initial:false}, (file) ->
-            restart()
-        builder.watch serverConfig
-        builder.watch clientConfig
-
-task 'kill', 'kills the development server', kill
+    appengine:
+        java: 'java'
+        pages: true
 
 task 'build', ->
     builder.build serverConfig, ->
-        builder.build clientConfig, ->
-            utility.spawn "ant#{ext} compile", ->
+        builder.build clientConfig
+
+task 'watch', 'runs dev server and watches for changes', run = ->
+    builder.watch serverConfig
+    builder.watch clientConfig
+
+task 'kill', 'kills the development server', kill = ->
+    builder.kill serverConfig
+    builder.kill clientConfig
 
 task 'test', ->
     builder.test serverConfig, ->

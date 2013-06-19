@@ -7,10 +7,13 @@ serverConfig =
     node:
         directory: 'lib/server'
     browser:
-        input: {}
+        input:
+            "glass-pages-server": "lib/server"
+            "glass-test": true
         output:
             directory: 'war/WEB-INF/js'
             webroot: 'war'
+            test: 'glass-test'
 
 clientConfig =
     name: "glass-pages"
@@ -19,10 +22,13 @@ clientConfig =
     node:
         directory: 'lib/client'
     browser:
-        input: {}
+        input:
+            "glass-pages": "lib/client"
+            "glass-test": true
         output:
             directory: 'war/js'
             webroot: 'war'
+            test: 'glass-test'
     appengine:
         java: 'java'
         pages: true
@@ -34,6 +40,9 @@ task 'build', ->
 task 'watch', 'runs dev server and watches for changes', run = ->
     builder.watch serverConfig
     builder.watch clientConfig
+    require('fs').watchFile "war/WEB-INF/js/PageServlet.js", ->
+        # rebuild the dist jar
+        utility.spawn "ant.bat compile"
 
 task 'kill', 'kills the development server', kill = ->
     builder.kill serverConfig

@@ -1,6 +1,6 @@
 <project>
 
-  <property name="sdk.dir" location="../appengine-java-sdk-1.8.0" />
+  <property name="sdk.dir" location="../appengine-java-sdk-1.8.1" />
 
   <import file="${sdk.dir}/config/user/ant-macros.xml" />
 
@@ -52,6 +52,13 @@
     <jar
       destfile="dist/glasspages.jar"
       basedir="war/WEB-INF/classes"/>
+    <copy
+        todir="dist"
+        flatten="true">
+      <fileset dir="java/jars">
+        <include name="**/*.jar" />
+      </fileset>
+    </copy>
   </target>
 
   <target name="runserver" depends="compile"

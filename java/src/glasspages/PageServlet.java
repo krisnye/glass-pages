@@ -43,9 +43,14 @@ public class PageServlet extends HttpServlet {
 			}
 		}
 
-
-		this.contextCache = new ScriptContextCache(sourceUrls);
-		this.contextCache.setDebug(this.debug);
+		try
+		{
+			this.contextCache = new ScriptContextCache(sourceUrls);
+		}
+		catch (IOException e)
+		{
+			throw new RuntimeException(e);
+		}
 	}
 
 	BaseFunction getPageFunction(ScriptContext context, String path) throws IOException
@@ -73,6 +78,11 @@ public class PageServlet extends HttpServlet {
 		if (path.endsWith("/"))
 			path += "index";
 		String source = null;
+		// check fo changed first
+		if (this.debug && contextCache.checkForChanges()) {
+			if (this.pageFunctionCache != null)
+				this.pageFunctionCache.clear();
+		}
 		ScriptContext context = contextCache.getContext();
 		try
 		{
@@ -84,6 +94,7 @@ public class PageServlet extends HttpServlet {
 		}
 		catch(Exception e)
 		{
+			response.setContentType("text/plain");
 			e.printStackTrace(response.getWriter());
 		}
 		finally

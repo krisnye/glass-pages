@@ -1,41 +1,97 @@
 package glasspages;
 import java.util.*;
+import java.util.regex.*;
 import java.io.*;
 import java.net.*;
 import org.mozilla.javascript.*;
 
 public class ScriptContextCache {
 
-	long lastModified = 0;
-	URL[] sourceUrls;
-	URL[] files;
-	String[] contents;
-	Stack<ScriptContext> contexts = new Stack<ScriptContext>();
-	boolean debug = false;
+	//	searches for require statements
+	//	and returns an array of dependencies.
+	static String[] findDependencies(String source) {
+		Matcher m = requirePattern.matcher(source);
+		ArrayList<String> deps = new ArrayList<String>();
+		while (m.find()) {
+			int start = m.start(1);
+			int end = m.end(1);
+			String found = source.substring(start, end);
+			deps.add(found);
+		}
+		return deps.toArray(new String[deps.size()]);
+	}
+	static Pattern requirePattern = Pattern.compile("\\brequire\\s*\\(\\s*['\"][\\./]+([^'\"]+)['\"]\\s*\\)");
 
-	public ScriptContextCache()
+	static class SourceScript
+	{
+		private URL url;
+		private String content;
+		private String[] dependencies;
+
+		public SourceScript(URL url)
+		{
+			this.url = url;
+		}
+		public void loadContent() throws IOException
+		{
+			this.content = FileHelper.read(url);
+			// search for dependents now.
+			this.dependencies = findDependencies(this.content);
+		}
+		void ensureLoaded() throws IOException
+		{
+			if (this.content == null)
+				this.loadContent();
+		}
+		public String[] getDependencies() throws IOException {
+			this.ensureLoaded();
+			return this.dependencies;
+		}
+		public String getContent() throws IOException {
+			this.ensureLoaded();
+			return this.content;
+		}
+		public URL getURL() {
+			return this.url;
+		}
+		public long getLastModified() {
+			String path = this.url.getPath();
+			// we can't get changes on jar includes
+			if (path.indexOf(".jar!") >= 0)
+				return 0;
+			File file = new File(path);
+			return file.lastModified();
+		}
+		public void evaluate(ScriptContext sc) throws IOException {
+			sc.evaluate(this.getContent(), this.toString());
+		}
+		public String toString() {
+			return this.url.toString();
+		}
+	}
+
+	long lastModified = 0;
+	// the original source urls
+	URL[] sourceUrls;
+	// file urls expanded from manifest urls
+	SourceScript[] sourceScripts;
+	// the reusable set of contexts.
+	Stack<ScriptContext> contexts = new Stack<ScriptContext>();
+
+	public ScriptContextCache() throws IOException
 	{
 		this(new URL[0]);
 	}
 
-	public ScriptContextCache(URL[] sourceUrls)
+	public ScriptContextCache(URL[] sourceUrls) throws IOException
 	{
 		this.sourceUrls = sourceUrls;
+		loadSourceScripts();
 	}
 
-	void loadFiles() throws IOException {
-		this.files = getSourceFiles(this.sourceUrls);
-		// load all of these file contents.
-		this.contents = new String[files.length];
-		for (int i = 0; i < files.length; i++) {
-			URL file = files[i];
-			contents[i] = FileHelper.read(file);
-		}
-	}
-
-	public void setDebug(boolean debug)
+	void loadSourceScripts() throws IOException
 	{
-		this.debug = debug;
+		this.sourceScripts = getSourceScripts(this.sourceUrls);
 	}
 
 	ScriptContext pop()
@@ -51,7 +107,7 @@ public class ScriptContextCache {
 		return null;
 	}
 
-	public boolean checkLastModified() throws IOException
+	public boolean checkForChanges() throws IOException
 	{
 		long lastModified = 0;
 		//	check last modified on any of our source urls
@@ -64,31 +120,72 @@ public class ScriptContextCache {
 		}
 
 		if (lastModified > this.lastModified) {
+			this.updateContexts(this.lastModified);
 			this.lastModified = lastModified;
-			// flush all our contexts.
-			this.contexts.clear();
 			return true;
 		}
 		return false;
 	}
+
+	void addScriptAndDependents(SourceScript source, List<SourceScript> changed) throws IOException {
+		if (changed.contains(source))
+			return;
+		changed.add(source);
+		String url = source.getURL().toString();
+		// O n^2 algorithm
+		for (SourceScript script : sourceScripts) {
+			String[] deps = script.getDependencies();
+			for (String dep : deps) {
+				if (url.indexOf(dep) >= 0) {
+					System.out.println("Dependent---: " + script);
+					addScriptAndDependents(script, changed);
+					break;
+				}
+			}
+		}
+	}
+
+	void updateContexts(long lastModified) throws IOException {
+		// trivial reload scripts, discard contexts.
+		this.loadSourceScripts();
+		// this.contexts.clear();
+
+		// find which files specifically have changed
+		ArrayList<SourceScript> changed = new ArrayList<SourceScript>();
+		for (SourceScript script : sourceScripts) {
+			long thisModified = script.getLastModified();
+			if (thisModified > lastModified) {
+				System.out.println("Changed---: " + script);
+				addScriptAndDependents(script, changed);
+			}
+		}
+
+		for (ScriptContext sc : this.contexts) {
+			sc.getContext().enter();
+			try
+			{
+				for (SourceScript script : changed) {
+					script.evaluate(sc);
+				}
+			}
+			finally
+			{
+				sc.getContext().exit();
+			}
+		}
+	}
 	
 	public ScriptContext getContext() throws IOException
 	{
-		if ((debug && checkLastModified()) || this.files == null)
-			this.loadFiles();
-
 		ScriptContext sc = pop();
 		if (sc == null) {
 			Context context = Context.enter();
 			Scriptable global = context.initStandardObjects();
 			sc = new ScriptContext(context, global);
-
 			System.out.println("New ScriptContext");
 			// now load up all of our source files
-			for (int i = 0; i < files.length; i++) {
-				URL file = files[i];
-				String content = contents[i];
-				sc.evaluate(content, file.toString());
+			for (SourceScript script : sourceScripts) {
+				script.evaluate(sc);
 			}
 		} else {
 			sc.getContext().enter();
@@ -103,9 +200,9 @@ public class ScriptContextCache {
 		contexts.push(context);
 	}
 
-	static URL[] getSourceFiles(URL[] sourceUrls) throws IOException
+	static SourceScript[] getSourceScripts(URL[] sourceUrls) throws IOException
 	{
-		ArrayList<URL> sourceFiles = new ArrayList<URL>();
+		ArrayList<SourceScript> sourceFiles = new ArrayList<SourceScript>();
 		Context context = null;
 		Scriptable global = null;
 		try
@@ -129,11 +226,11 @@ public class ScriptContextCache {
 					// join path to its manifest root
 					for (int i = 0; i < array.length; i++) {
 						File file = new File(manifestDirectory, array[i]);
-						sourceFiles.add(file.toURI().toURL());
+						sourceFiles.add(new SourceScript(file.toURI().toURL()));
 					}
 				}
 				else {
-					sourceFiles.add(sourceUrl);
+					sourceFiles.add(new SourceScript(sourceUrl));
 				}
 			}
 		}
@@ -144,7 +241,7 @@ public class ScriptContextCache {
 		}
 
 		// System.out.println("Manifest String[]: " + array);
-		return sourceFiles.toArray(new URL[sourceFiles.size()]);
+		return sourceFiles.toArray(new SourceScript[sourceFiles.size()]);
 	}
 
 }

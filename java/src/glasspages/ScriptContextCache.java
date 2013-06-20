@@ -137,7 +137,6 @@ public class ScriptContextCache {
 			String[] deps = script.getDependencies();
 			for (String dep : deps) {
 				if (url.indexOf(dep) >= 0) {
-					System.out.println("Dependent---: " + script);
 					addScriptAndDependents(script, changed);
 					break;
 				}
@@ -155,9 +154,13 @@ public class ScriptContextCache {
 		for (SourceScript script : sourceScripts) {
 			long thisModified = script.getLastModified();
 			if (thisModified > lastModified) {
-				System.out.println("Changed---: " + script);
 				addScriptAndDependents(script, changed);
 			}
+		}
+
+		// print out all the changed
+		for (SourceScript script : changed) {
+			System.out.println(script);
 		}
 
 		for (ScriptContext sc : this.contexts) {

@@ -94,8 +94,16 @@ public class PageServlet extends HttpServlet {
 		}
 		catch(Exception e)
 		{
+			// if (response.getStatus() < 400)
+			// 	response.setStatus(500);
 			response.setContentType("text/plain");
-			e.printStackTrace(response.getWriter());
+			if (debug) {
+				e.printStackTrace(response.getWriter());
+			}
+			else {
+				response.getWriter().write(e.getMessage());
+			}
+
 		}
 		finally
 		{

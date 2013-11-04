@@ -5,7 +5,7 @@ import java.io.*;
 import java.net.*;
 import org.mozilla.javascript.*;
 
-public class ScriptContextCache {
+class ScriptContextCache {
 
 	//	searches for require statements
 	//	and returns an array of dependencies.
@@ -37,6 +37,12 @@ public class ScriptContextCache {
 			this.content = FileHelper.read(url);
 			// search for dependents now.
 			this.dependencies = findDependencies(this.content);
+			// System.out.println("----------------------------------");
+			// System.out.println(this.url);
+			// for (int i = 0; i < dependencies.length; i++) {
+			// 	System.out.println("    " + this.dependencies[i]);
+			// }
+			// System.out.println("----------------------------------");
 		}
 		void ensureLoaded() throws IOException
 		{
@@ -74,7 +80,7 @@ public class ScriptContextCache {
 	// the original source urls
 	URL[] sourceUrls;
 	// file urls expanded from manifest urls
-	SourceScript[] sourceScripts;
+	List<SourceScript> sourceScripts;
 	// the reusable set of contexts.
 	Stack<ScriptContext> contexts = new Stack<ScriptContext>();
 
@@ -91,7 +97,7 @@ public class ScriptContextCache {
 
 	void loadSourceScripts() throws IOException
 	{
-		this.sourceScripts = getSourceScripts(this.sourceUrls);
+		this.sourceScripts = new ArrayList<SourceScript>(Arrays.asList(getSourceScripts(this.sourceUrls)));
 	}
 
 	ScriptContext pop()
@@ -127,26 +133,30 @@ public class ScriptContextCache {
 		return false;
 	}
 
-	void addScriptAndDependents(SourceScript source, List<SourceScript> changed) throws IOException {
+	boolean addScriptAndDependents(SourceScript source, List<SourceScript> changed) throws IOException {
 		if (changed.contains(source))
-			return;
+			return false;
 		changed.add(source);
 		String url = source.getURL().toString();
+		// remove trailing ".js"
+		if (url.endsWith(".js"))
+			url = url.substring(0, url.length() - ".js".length());
 		// O n^2 algorithm
 		for (SourceScript script : sourceScripts) {
 			String[] deps = script.getDependencies();
 			for (String dep : deps) {
-				if (url.indexOf(dep) >= 0) {
+				if (url.endsWith(dep)) {
 					addScriptAndDependents(script, changed);
 					break;
 				}
 			}
 		}
+		return true;
 	}
 
 	void updateContexts(long lastModified) throws IOException {
 		// trivial reload scripts, discard contexts.
-		this.loadSourceScripts();
+		// this.loadSourceScripts();
 		// this.contexts.clear();
 
 		// find which files specifically have changed
@@ -158,12 +168,14 @@ public class ScriptContextCache {
 			}
 		}
 
-		// print out all the changed
+		// print out all the changed and reload them
 		for (SourceScript script : changed) {
 			System.out.println(script);
+			script.loadContent();
 		}
 
-		for (ScriptContext sc : this.contexts) {
+		for (int i = 0; i < this.contexts.size(); i++) {
+			ScriptContext sc = this.contexts.get(i);
 			sc.getContext().enter();
 			try
 			{

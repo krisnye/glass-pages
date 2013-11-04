@@ -6,7 +6,7 @@ import java.net.*;
 public class FileHelper {
 
 	//	TODO: Could cache the correct path for performance?
-	public static String readRecursive(String path) throws IOException
+	public static String findRecursive(String path) throws IOException
 	{
 		String checkPath = path;
 		int index = path.lastIndexOf('.');
@@ -16,7 +16,7 @@ public class FileHelper {
 			while (true)
 			{
 				if (new File(checkPath).exists())
-					return read(checkPath);
+					return checkPath;
 
 				index = checkPath.lastIndexOf('/');
 				if (index <= 0)
@@ -27,7 +27,7 @@ public class FileHelper {
 		}
 		throw new RuntimeException("File not found: " + path);
 	}
-	
+
 	public static String read(String path) throws IOException
 	{
 		InputStream input = new FileInputStream(path);
@@ -39,22 +39,29 @@ public class FileHelper {
 		InputStream input = url.openStream();
 		return read(input);
 	}
+
+	public static String read(BufferedReader reader) throws IOException
+	{
+		StringWriter writer = new StringWriter(256);
+		int read;
+		while ((read = reader.read()) >= 0)
+			writer.write((char)read);
+		return writer.toString();
+	}
+
+	public static String read(BufferedReader reader, int length) throws IOException
+	{
+		char[] chars = new char[length];
+		reader.read(chars, 0, length);
+		return new String(chars);
+	}
 	
 	public static String read(InputStream input) throws IOException
 	{
 		try
 		{
 			BufferedReader reader = new BufferedReader(new InputStreamReader(input));
-			StringBuffer buffer = new StringBuffer(Math.max(input.available(), 1024));
-			String lineSeparator = System.getProperty("line.separator");
-			String text = null;
-			while ((text = reader.readLine()) != null)
-			{
-				if (buffer.length() > 0)
-					buffer.append(lineSeparator);
-				buffer.append(text);
-			}
-			return buffer.toString();
+			return read(reader);
 		}
 		finally
 		{

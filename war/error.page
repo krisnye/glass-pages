@@ -1,0 +1,6 @@
+{{
+    writer = new java.io.StringWriter
+    error.printStackTrace new java.io.PrintWriter writer
+    errorstring = writer.toString()
+}}
+{{ errorstring }}

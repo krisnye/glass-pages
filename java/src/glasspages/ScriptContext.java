@@ -1,7 +1,7 @@
 package glasspages;
 import org.mozilla.javascript.*;
 
-public class ScriptContext {
+class ScriptContext {
 	
 	private Context context;
 	private Scriptable global;

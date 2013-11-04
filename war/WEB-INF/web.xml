@@ -16,6 +16,10 @@
             <param-name>debug</param-name>
             <param-value>true</param-value>
         </init-param>
+        <init-param>
+            <param-name>error</param-name>
+            <param-value>/error</param-value>
+        </init-param>
     </servlet>
     <servlet-mapping>
         <servlet-name>pageServlet</servlet-name>

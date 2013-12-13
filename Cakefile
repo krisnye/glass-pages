@@ -1,3 +1,14 @@
+# fs = require 'fs'
+# try
+#     if not fs.existsSync 'node_modules'
+#         fs.mkdir 'node_modules'
+#     if not fs.existsSync 'node_modules/glass-build'
+#         fs.symlinkSync '../../glass-build/lib', 'node_modules/glass-build', 'dir'
+#     if not fs.existsSync 'node_modules/glass-test'
+#         fs.symlinkSync '../../glass-test/lib', 'node_modules/glass-test', 'dir'
+# catch e
+#     console.log "You need to run as an administrator to create symlinks: #{e}"
+
 {utility,watcher} = builder = require 'glass-build'
 
 serverConfig =

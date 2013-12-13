@@ -1,2 +1,0 @@
-
-exports.hello = -> "Hello Client."

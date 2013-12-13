@@ -1,7 +1,0 @@
-{{
-    gp = require "glass-pages-server"
-}}
-
-Hello {{ "Pages<b>" }} {{{ "<b>raw</b>" }}}<br>
-
-{{ gp.hello() }}

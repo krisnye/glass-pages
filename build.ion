@@ -1,0 +1,10 @@
+
+Compile coffeescript pages
+
+    input = @getDirectory 'pages'
+    output = @getDirectory 'www/WEB-INF/pages'
+    for input.search ".coffee"
+        source = .
+        target = output.getFile changeExtension key, ".js"
+        [target.path]: "(function(){" + compileCoffeeScript(source) + "})"
+

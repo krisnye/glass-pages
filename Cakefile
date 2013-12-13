@@ -1,67 +1,19 @@
-# fs = require 'fs'
-# try
-#     if not fs.existsSync 'node_modules'
-#         fs.mkdir 'node_modules'
-#     if not fs.existsSync 'node_modules/glass-build'
-#         fs.symlinkSync '../../glass-build/lib', 'node_modules/glass-build', 'dir'
-#     if not fs.existsSync 'node_modules/glass-test'
-#         fs.symlinkSync '../../glass-test/lib', 'node_modules/glass-test', 'dir'
-# catch e
-#     console.log "You need to run as an administrator to create symlinks: #{e}"
+fs = require 'fs'
+cp = require 'child_process'
 
-{utility,watcher} = builder = require 'glass-build'
+# create a symlink to the local ion project if present
+if fs.existsSync '../ion/lib'
+    try
+        fs.mkdir 'node_modules' if not fs.existsSync 'node_modules'
+        fs.symlinkSync '../../ion/lib', 'node_modules/ion', 'dir' if not fs.existsSync 'node_modules/ion'
+        # also add a symlink from the WEB-INF/js to our node_modules folder
+        fs.symlinkSync '../../node_modules', 'www/WEB-INF/js', 'dir' if not fs.existsSync 'www/WEB-INF/js'
+    catch e
+        console.log "You need to run as an administrator to create symlinks: #{e}"
 
-serverConfig =
-    name: "glass-pages-server"
-    source:
-        directory: 'src/server'
-    node:
-        directory: 'lib/server'
-    browser:
-        input:
-            "glass-pages-server": "lib/server"
-            "glass-test": true
-        output:
-            directory: 'war/WEB-INF/js'
-            webroot: 'war'
-            test: 'glass-test'
+task "watch", "watches and builds this project", ->
+    console.log require('ion/builder').runTemplate 'build.ion'
 
-clientConfig =
-    name: "glass-pages"
-    source:
-        directory: 'src/client'
-    node:
-        directory: 'lib/client'
-    browser:
-        input:
-            "glass-pages": "lib/client"
-            "glass-test": true
-        output:
-            directory: 'war/js'
-            webroot: 'war'
-            test: 'glass-test'
-    appengine:
-        java: 'java'
-        pages: true
-
-task 'build', ->
-    builder.build serverConfig, ->
-        builder.build clientConfig
-
-task 'watch', 'runs dev server and watches for changes', run = ->
-    builder.watch serverConfig
-    builder.watch clientConfig
-    require('fs').watchFile "war/WEB-INF/js/PageServlet.js", ->
-        # rebuild the dist jar
-        utility.spawn "ant.bat compile"
-
-task 'kill', 'kills the development server', kill = ->
-    builder.kill serverConfig
-    builder.kill clientConfig
-
-task 'test', ->
-    builder.test serverConfig, ->
-        builder.test clientConfig
-
-task 'js', 'runs the rhino interpreter', ->
-    utility.spawn "java -jar war/WEB-INF/lib/js.jar"
+task "kill", "kills java server on windows", ->
+    cp.exec "taskkill /F /IM java.exe", (args...) ->
+        console.log arg for arg in args when arg?

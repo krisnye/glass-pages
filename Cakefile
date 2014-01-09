@@ -13,7 +13,15 @@ if fs.existsSync '../ion/lib'
 
 task "watch", "watches and builds this project", ->
     console.log require('ion/builder').runTemplate 'build.ion'
+    # kill any server that's running
+    kill ->
+        utility = require 'ion/builder/utility'
+        # start the web server
+        utility.spawn "ant.bat runserver"
 
-task "kill", "kills java server on windows", ->
+kill = (callback) ->
     cp.exec "taskkill /F /IM java.exe", (args...) ->
         console.log arg for arg in args when arg?
+        callback?()
+
+task "kill", "kills java server on windows", -> kill()

@@ -25,37 +25,47 @@ public class PageServlet extends HttpServlet {
 	ScriptContextCache contextCache;
 	boolean debug;
 	String errorPath;
+	Properties routes;
 	
 	@Override
 	public void init()
 	{
-		this.debug = Boolean.parseBoolean(this.getInitParameter("debug"));
-
-		if (!this.debug)
-			this.pageInfoCache = new HashMap<String,PageInfo>();
-
-		String sourceParameter = this.getInitParameter("source");
-		if (sourceParameter == null)
-			throw new RuntimeException("Missing init parameter 'source'");
-		this.errorPath = this.getInitParameter("error");
-		String[] sourceFiles = sourceParameter.split(";");
-		URL[] sourceUrls = new URL[sourceFiles.length];
-		for (int i = 0; i < sourceFiles.length; i++) {
-			String sourceFile = sourceFiles[i];
-			if (sourceFile.indexOf(':') < 0)
-				sourceFile = "file:" + sourceFile;
-			try
-			{
-				sourceUrls[i] = new URL(sourceFile);
-			}
-			catch (MalformedURLException e)
-			{
-				throw new RuntimeException(e);
-			}
-		}
-
 		try
 		{
+			this.debug = Boolean.parseBoolean(this.getInitParameter("debug"));
+
+			if (!this.debug)
+				this.pageInfoCache = new HashMap<String,PageInfo>();
+
+			String routesParameter = this.getInitParameter("routes");
+			if (routesParameter != null) {
+				this.routes = new Properties();
+				routes.load(new StringReader(routesParameter));
+			}
+
+			String sourceParameter = this.getInitParameter("source");
+			if (sourceParameter == null)
+				throw new RuntimeException("Missing init parameter 'source'");
+			// automatically insert a reference to our PageServlet.js if not present
+			String sourceDelimiter = ";";
+			if (sourceParameter.indexOf("PageServlet.js") < 0)
+				sourceParameter = "jar:file:WEB-INF/lib/glasspages.jar!/glasspages/PageServlet.js" + sourceDelimiter + sourceParameter;
+			this.errorPath = this.getInitParameter("error");
+			String[] sourceFiles = sourceParameter.split(sourceDelimiter);
+			URL[] sourceUrls = new URL[sourceFiles.length];
+			for (int i = 0; i < sourceFiles.length; i++) {
+				String sourceFile = sourceFiles[i];
+				if (sourceFile.indexOf(':') < 0)
+					sourceFile = "file:" + sourceFile;
+				try
+				{
+					sourceUrls[i] = new URL(sourceFile);
+				}
+				catch (MalformedURLException e)
+				{
+					throw new RuntimeException(e);
+				}
+			}
 			this.contextCache = new ScriptContextCache(sourceUrls);
 		}
 		catch (IOException e)
@@ -93,6 +103,7 @@ public class PageServlet extends HttpServlet {
 		PageInfo info = getPageInfo(context, path);
 		context.put("request", request);
 		context.put("response", response);
+		context.put("path", path);
 		context.put("servlet", this);
 		context.put("__filename", info.path);
 		context.put("__pagepath", getPagePath(info.path));
@@ -101,16 +112,32 @@ public class PageServlet extends HttpServlet {
 		context.call(info.function);
 	}
 
+	HttpServletRequest getRequestWrapper(HttpServletRequest request, final String path) {
+		return new HttpServletRequestWrapper(request) {
+			public String getRequestURI() { return path; }
+		};
+	}
+
 	@Override
 	public void service(HttpServletRequest request, HttpServletResponse response) throws IOException
 	{
 		response.setContentType("text/html");
 
 		String path = request.getRequestURI();
+		// use routes if present
+		if (this.routes != null) {
+			String route = this.routes.getProperty(path);
+			if (route != null) {
+				path = route;
+				// then we also need to replace the HttpServletRequest.getRequestURI method
+				// request = getRequestWrapper(request, path);
+			}
+		}
+
 		if (path.endsWith("/"))
 			path += "index";
 		String source = null;
-		// check fo changed first
+		// check for changes first
 		if (this.debug && contextCache.checkForChanges()) {
 			if (this.pageInfoCache != null)
 				this.pageInfoCache.clear();

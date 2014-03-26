@@ -1,10 +1,10 @@
 
 Compile coffeescript pages
 
-    input = @getDirectory 'pages'
-    output = @getDirectory 'www/WEB-INF/pages'
-    for input.search ".coffee"
-        source = .
+    Directory = require 'ion/builder/Directory'
+    var input = new Directory 'pages'
+    var output = new Directory 'www/WEB-INF/pages'
+    for key, source of input.search(".coffee")
         target = output.getFile changeExtension key, ".js"
-        (target.path): "(function(){" + compileCoffeeScript(source) + "})"
+        [target.path]: "(function(){" + compileCoffeeScript(source) + "})"
 

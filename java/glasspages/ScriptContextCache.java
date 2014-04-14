@@ -209,6 +209,7 @@ class ScriptContextCache {
         ScriptContext sc = pop();
         if (sc == null) {
             Context context = Context.enter();
+            context.setLanguageVersion(Context.VERSION_1_8);
             Scriptable global = context.initStandardObjects();
             sc = new ScriptContext(context, global);
             System.out.println("New ScriptContext");

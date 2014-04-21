@@ -35,8 +35,12 @@ class ScriptContextCache {
         public void loadContent() throws IOException
         {
             this.content = FileHelper.read(url);
+            // if (this.content == null)
+            //     throw new RuntimeException("No content found for " + url);
             // search for dependents now.
             this.dependencies = findDependencies(this.content);
+            // if (this.dependencies == null)
+            //     throw new RuntimeException("this.dependencies is null " + url);
             // System.out.println("----------------------------------");
             // System.out.println(this.url);
             // for (int i = 0; i < dependencies.length; i++) {
@@ -148,20 +152,34 @@ class ScriptContextCache {
     }
 
     boolean addScriptAndDependents(SourceScript source, List<SourceScript> changed) throws IOException {
+        // if (changed == null)
+        //     throw new RuntimeException("changed is null");
         if (changed.contains(source))
             return false;
         changed.add(source);
+        // if (source == null)
+        //     throw new RuntimeException("source is null");
+        // if (source.getURL() == null)
+        //     throw new RuntimeException("source.getURL() is null");
         String url = source.getURL().toString();
+        // if (url == null)
+        //     throw new RuntimeException("url is null");
         // remove trailing ".js"
         if (url.endsWith(".js"))
             url = url.substring(0, url.length() - ".js".length());
         // O n^2 algorithm
         for (SourceScript script : sourceScripts) {
+            // if (script == null)
+            //     throw new RuntimeException("script is null");
             String[] deps = script.getDependencies();
-            for (String dep : deps) {
-                if (url.endsWith(dep)) {
-                    addScriptAndDependents(script, changed);
-                    break;
+            // if (deps == null)
+            //     throw new RuntimeException("deps is null " + script.getURL() + "\n*********\n" + script.getContent() + "\n************");
+            if (deps != null) {
+                for (String dep : deps) {
+                    if (url.endsWith(dep)) {
+                        addScriptAndDependents(script, changed);
+                        break;
+                    }
                 }
             }
         }

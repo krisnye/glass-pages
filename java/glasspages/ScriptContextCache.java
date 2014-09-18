@@ -186,7 +186,7 @@ class ScriptContextCache {
         return true;
     }
 
-    void updateContexts(long lastModified) throws IOException {
+    synchronized void updateContexts(long lastModified) throws IOException {
         // trivial reload scripts, discard contexts.
         // this.loadSourceScripts();
         // this.contexts.clear();

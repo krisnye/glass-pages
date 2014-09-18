@@ -1,10 +1,12 @@
 
-Compile coffeescript pages
-
-    Directory = require 'ion/builder/Directory'
-    var input = new Directory 'pages'
-    var output = new Directory 'www/WEB-INF/pages'
+# Compile coffeescript pages
+activate template ->
+    let Directory = import 'ion/builder/Directory'
+    let builder = import 'ion/builder'
+    let input = new Directory('pages')
+    let output = new Directory('www/WEB-INF/pages')
     for key, source of input.search(".coffee")
-        target = output.getFile changeExtension key, ".js"
-        [target.path]: "(function(){" + compileCoffeeScript(source) + "})"
+        let target = output.getFile(builder.changeExtension(key, ".js"))
+        let result = "(function(){" + builder.compileCoffeeScript(source) + "})"
+        output.write(key, result)
 

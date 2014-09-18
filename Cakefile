@@ -12,7 +12,7 @@ if fs.existsSync '../ion/lib'
         console.log "You need to run as an administrator to create symlinks: #{e}"
 
 task "watch", "watches and builds this project", ->
-    console.log require('ion/builder').runTemplate 'build.ion'
+    require('ion/builder').runIonFile 'build.ion'
     # kill any server that's running
     kill ->
         utility = require 'ion/builder/utility'

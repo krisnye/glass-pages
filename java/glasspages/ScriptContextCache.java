@@ -73,7 +73,13 @@ class ScriptContextCache {
             return file.lastModified();
         }
         public void evaluate(ScriptContext sc) throws IOException {
-            sc.evaluate(this.getContent(), this.toString());
+            String content = this.getContent();
+
+            // we skip command line scripts.
+            if (content.startsWith("#!"))
+                return;
+
+            sc.evaluate(content, this.toString());
         }
         public String toString() {
             return this.url.toString();

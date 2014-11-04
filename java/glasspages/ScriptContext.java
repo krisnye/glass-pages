@@ -26,8 +26,13 @@ class ScriptContext {
 	//	executes a script
 	public Object evaluate(String source, String sourceName)
 	{
-		Object result = context.evaluateString(global, source, sourceName, 0, null);
-		return result;
+		try {
+			Object result = context.evaluateString(global, source, sourceName, 0, null);
+			return result;
+		}
+		catch (Exception e) {
+			throw new RuntimeException("Evaluation error in source: " + sourceName, e);
+		}
 	}
 
 	static Object[] emptyArgs = new Object[0];

@@ -165,6 +165,10 @@ public class PageServlet extends HttpServlet {
 			else if (debug && status == 500) {
 				e.printStackTrace(response.getWriter());
 			}
+			else if (e instanceof JavaScriptException) {
+				JavaScriptException je = (JavaScriptException)e;
+				response.getWriter().write(je.getValue().toString());
+			}
 			else {
 				response.getWriter().write(e.getMessage());
 			}

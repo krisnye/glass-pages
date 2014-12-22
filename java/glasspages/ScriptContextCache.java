@@ -34,11 +34,21 @@ class ScriptContextCache {
         }
         public void loadContent() throws IOException
         {
-            this.content = FileHelper.read(url);
+            try
+            {
+                this.content = FileHelper.read(url);
+                this.dependencies = findDependencies(this.content);
+            }
+            catch (FileNotFoundException e)
+            {
+                System.out.println("File not found: " + url);
+                this.content = "";
+                this.dependencies = new String[0];
+            }
             // if (this.content == null)
             //     throw new RuntimeException("No content found for " + url);
             // search for dependents now.
-            this.dependencies = findDependencies(this.content);
+
             // if (this.dependencies == null)
             //     throw new RuntimeException("this.dependencies is null " + url);
             // System.out.println("----------------------------------");

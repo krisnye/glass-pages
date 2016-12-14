@@ -218,7 +218,7 @@ class ScriptContextCache {
 
         // print out all the changed and reload them
         for (SourceScript script : changed) {
-            System.out.println(script);
+            // System.out.println(script);
             script.loadContent();
         }
 
